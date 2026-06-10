@@ -38,5 +38,5 @@ targets:
         CODE_SIGN_IDENTITY: ""
         CODE_SIGNING_REQUIRED: NO
         CODE_SIGNING_ALLOWED: NO
-        PRODUCT_BUNDLE_IDENTIFIER: com.openmoss.mosstts.extension
+        PRODUCT_BUNDLE_IDENTIFIER: com.openmoss.mosstts.host.extension
         INFOPLIST_FILE: MOSS-TTS-Extension/Info.plist
