@@ -6,7 +6,7 @@ import MLXAudioTTS
 @objc(MOSSSynthesisAudioUnit)
 public class MOSSSynthesisAudioUnit: AVSpeechSynthesisProviderAudioUnit {
     
-    private var model: MLXAudio.TTSModel?
+    private var model: (any SpeechGenerationModel)?
     private let modelQueue = DispatchQueue(label: "com.openmoss.mosstts.modelQueue", qos: .userInitiated)
     private let appGroupName = "group.com.openmoss.mosstts"
     
@@ -52,7 +52,7 @@ public class MOSSSynthesisAudioUnit: AVSpeechSynthesisProviderAudioUnit {
                         throw NSError(domain: "MOSS-TTS", code: -1, userInfo: [NSLocalizedDescriptionKey: "App Group not configured"])
                     }
                     let modelPath = containerURL.appendingPathComponent("MOSS-TTS-Nano-100M").path
-                    self.model = try MLXAudio.loadTTSModel(modelPath)
+                    self.model = try await TTS.loadModel(modelRepo: modelPath)
                 }
                 
                 guard let model = self.model else {
@@ -61,27 +61,30 @@ public class MOSSSynthesisAudioUnit: AVSpeechSynthesisProviderAudioUnit {
                 }
                 
                 // Generate audio using MLX-Audio
-                let result = try model.generate(text: text, language: languageCode)
-                
-                // Convert MLXArray to AVAudioPCMBuffer (24kHz, 1-channel, Float32)
-                let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 24000, channels: 1, interleaved: false)!
-                let frameCount = AVAudioFrameCount(result.audio.size)
-                
-                guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
-                    outputBlock(nil, true)
-                    return
+                for try await result in model.generate(text: text, language: languageCode) {
+                    // Convert MLXArray to AVAudioPCMBuffer (24kHz, 1-channel, Float32)
+                    let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 24000, channels: 1, interleaved: false)!
+                    let frameCount = AVAudioFrameCount(result.audio.size)
+                    
+                    guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
+                        outputBlock(nil, true)
+                        return
+                    }
+                    buffer.frameLength = frameCount
+                    
+                    let data = result.audio.data()
+                    data.withUnsafeBytes { rawBuffer in
+                        guard let source = rawBuffer.baseAddress?.assumingMemoryBound(to: Float.self) else { return }
+                        guard let destination = buffer.floatChannelData?[0] else { return }
+                        destination.assign(from: source, count: Int(frameCount))
+                    }
+                    
+                    // Return each buffer chunk. 'false' means more chunks coming.
+                    outputBlock(buffer, false)
                 }
-                buffer.frameLength = frameCount
                 
-                let data = result.audio.data()
-                data.withUnsafeBytes { rawBuffer in
-                    guard let source = rawBuffer.baseAddress?.assumingMemoryBound(to: Float.self) else { return }
-                    guard let destination = buffer.floatChannelData?[0] else { return }
-                    destination.assign(from: source, count: Int(frameCount))
-                }
-                
-                // Return the buffer to the system. 'true' indicates this is the final chunk.
-                outputBlock(buffer, true)
+                // Signal completion with nil buffer
+                outputBlock(nil, true)
                 
             } catch {
                 print("❌ Synthesis failed: \(error)")
