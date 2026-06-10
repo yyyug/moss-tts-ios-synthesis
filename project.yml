@@ -29,7 +29,8 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.openmoss.mosstts.host
         INFOPLIST_FILE: MOSS-TTS-Host/Info.plist
     entitlements:
-      - com.apple.security.application-groups: [group.com.openmoss.mosstts]
+      com.apple.security.application-groups:
+        - group.com.openmoss.mosstts
 
   MOSS-TTS-Extension:
     type: app-extension
@@ -43,4 +44,5 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.openmoss.mosstts.host.extension
         INFOPLIST_FILE: MOSS-TTS-Extension/Info.plist
     entitlements:
-      - com.apple.security.application-groups: [group.com.openmoss.mosstts]
+      com.apple.security.application-groups:
+        - group.com.openmoss.mosstts
