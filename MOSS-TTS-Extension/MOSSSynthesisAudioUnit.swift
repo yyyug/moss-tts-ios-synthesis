@@ -32,7 +32,7 @@ public class MOSSSynthesisAudioUnit: AVSpeechSynthesisProviderAudioUnit {
     }
     
     // 2. Synthesize Speech from SSML
-    public func synthesizeSpeech(for request: AVSpeechSynthesisProviderRequest, outputBlock: @escaping (AVAudioPCMBuffer?, Bool) -> Void) {
+    @objc public func synthesizeSpeech(for request: AVSpeechSynthesisProviderRequest, outputBlock: @escaping (AVAudioPCMBuffer?, Bool) -> Void) {
         let ssml = request.ssmlRepresentation
         let voiceIdentifier = request.voice.identifier
         
