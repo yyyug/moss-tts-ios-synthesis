@@ -9,6 +9,9 @@ packages:
   MLX:
     url: https://github.com/ml-explore/mlx-swift
     branch: main
+  MLXAudio:
+    url: https://github.com/Blaizzy/mlx-audio-swift
+    branch: main
 
 targets:
   MOSS-TTS-Host:
