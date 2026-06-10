@@ -26,12 +26,12 @@ jobs:
         run: brew install xcodegen
 
       - name: Cache Swift Package Dependencies
+        id: cache-spm
         uses: actions/cache@v4
         with:
-          path: |
-            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
-            ~/Library/Developer/Xcode/DerivedData/**/.build
+          path: ~/Library/Developer/Xcode/DerivedData
           key: swift-spm-${{ hashFiles('project.yml') }}
+          restore-keys: swift-spm-
 
       - name: Generate Xcode Project
         run: xcodegen generate
@@ -41,6 +41,7 @@ jobs:
           xcodebuild -resolvePackageDependencies \
             -project MOSSTTS.xcodeproj \
             -scheme MOSS-TTS-Host \
+            -derivedDataPath ~/Library/Developer/Xcode/DerivedData \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
@@ -52,6 +53,7 @@ jobs:
             -scheme MOSS-TTS-Host \
             -archivePath build/MOSSTTS.xcarchive \
             -destination 'generic/platform=iOS' \
+            -derivedDataPath ~/Library/Developer/Xcode/DerivedData \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
