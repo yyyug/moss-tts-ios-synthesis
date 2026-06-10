@@ -10,13 +10,6 @@ packages:
     url: https://github.com/Blaizzy/mlx-audio-swift
     branch: main
 
-settings:
-  base:
-    DEVELOPMENT_TEAM: ""
-    CODE_SIGN_IDENTITY: ""
-    CODE_SIGNING_REQUIRED: NO
-    CODE_SIGNING_ALLOWED: NO
-
 targets:
   MOSS-TTS-Host:
     type: application
@@ -28,8 +21,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.openmoss.mosstts.host
         INFOPLIST_FILE: MOSS-TTS-Host/Info.plist
-    entitlements:
-      path: MOSS-TTS-Host/MOSS-TTS-Host.entitlements
+        CODE_SIGN_ENTITLEMENTS: MOSS-TTS-Host/MOSS-TTS-Host.entitlements
 
   MOSS-TTS-Extension:
     type: app-extension
@@ -42,5 +34,4 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.openmoss.mosstts.host.extension
         INFOPLIST_FILE: MOSS-TTS-Extension/Info.plist
-    entitlements:
-      path: MOSS-TTS-Extension/MOSS-TTS-Extension.entitlements
+        CODE_SIGN_ENTITLEMENTS: MOSS-TTS-Extension/MOSS-TTS-Extension.entitlements
