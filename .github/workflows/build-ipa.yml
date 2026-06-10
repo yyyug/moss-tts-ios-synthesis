@@ -12,14 +12,14 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      - name: Select Xcode 26.3 for Swift 6.2
+        run: sudo xcode-select --switch /Applications/Xcode_26.3.app
+
       - name: Install XcodeGen
         run: brew install xcodegen
 
       - name: Generate Xcode Project
         run: xcodegen generate
-
-      - name: Select Xcode 26.3 for Swift 6.2
-        run: sudo xcode-select --switch /Applications/Xcode_26.3.app
 
       - name: Build Unsigned Archive
         run: |
