@@ -18,6 +18,9 @@ jobs:
       - name: Generate Xcode Project
         run: xcodegen generate
 
+      - name: Select Xcode 26.3 for Swift 6.2
+        run: sudo xcode-select --switch /Applications/Xcode_26.3.app
+
       - name: Build Unsigned Archive
         run: |
           xcodebuild clean archive \
