@@ -6,9 +6,6 @@ options:
   generateEmptyDirectories: true
 
 packages:
-  MLX:
-    url: https://github.com/ml-explore/mlx-swift
-    branch: main
   MLXAudio:
     url: https://github.com/Blaizzy/mlx-audio-swift
     branch: main
@@ -34,7 +31,7 @@ targets:
     platform: iOS
     sources: [MOSS-TTS-Extension]
     dependencies:
-      - package: MLX
+      - package: MLXAudio
     settings:
       base:
         DEVELOPMENT_TEAM: ""
