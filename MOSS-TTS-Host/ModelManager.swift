@@ -19,15 +19,22 @@ class ModelManager: ObservableObject {
         return URLSession(configuration: config)
     }()
     
+    private var modelContainerURL: URL? {
+        if let shared = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName) {
+            status = "✅ App Group available (shared container)"
+            return shared
+        }
+        status = "⚠️ App Group not configured, using local documents directory"
+        return FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+    }
+    
     func ensureModelIsDownloaded() async {
         status = "Checking model status..."
         
-        guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName) else {
-            status = "❌ Error: App Group '\(appGroupName)' not configured. Enable App Groups in both targets with this identifier."
+        guard let containerURL = modelContainerURL else {
+            status = "❌ No storage available."
             return
         }
-        
-        status = "✅ App Group OK. Container: \(containerURL.path)"
         
         let modelDirectory = containerURL.appendingPathComponent(modelName)
         
