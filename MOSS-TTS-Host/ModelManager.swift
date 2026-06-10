@@ -11,6 +11,13 @@ class ModelManager: ObservableObject {
     private let appGroupName = "group.com.openmoss.mosstts"
     private let modelName = "MOSS-TTS-Nano-100M"
     private let modelRepo = "mlx-community/MOSS-TTS-Nano-100M"
+    private let session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 120
+        config.timeoutIntervalForResource = 600
+        config.waitsForConnectivity = true
+        return URLSession(configuration: config)
+    }()
     
     func ensureModelIsDownloaded() async {
         status = "Checking model status..."
@@ -43,15 +50,12 @@ class ModelManager: ObservableObject {
         status = "Fetching file list from Hugging Face API..."
         
         do {
-            // Create temporary directory
-            let tempDir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
-            try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             
-            // Hugging Face API to list files in the repo
             let apiURL = URL(string: "https://huggingface.co/api/models/\(modelRepo)/tree/main")!
             status = "API: \(apiURL.absoluteString)"
             
-            let (data, response) = try await URLSession.shared.data(from: apiURL)
+            let (data, response) = try await session.data(from: apiURL)
             guard let httpResponse = response as? HTTPURLResponse else {
                 status = "❌ Download failed: Not an HTTP response"
                 isDownloading = false
@@ -64,7 +68,6 @@ class ModelManager: ObservableObject {
                 return
             }
             
-            // Decode file list
             let allItems = try JSONDecoder().decode([HFApiItem].self, from: data)
             let files = allItems.filter { $0.type == "file" }
             
@@ -74,24 +77,46 @@ class ModelManager: ObservableObject {
                 return
             }
             
-            status = "⬇️ Downloading \(files.count) model files..."
+            let totalFiles = files.count
+            var downloaded = 0
+            var skipped = 0
             
             for (index, file) in files.enumerated() {
                 let fileURL = URL(string: "https://huggingface.co/\(modelRepo)/resolve/main/\(file.path)")!
                 let destinationURL = directory.appendingPathComponent(file.path)
                 
+                if FileManager.default.fileExists(atPath: destinationURL.path) {
+                    skipped += 1
+                    downloaded += 1
+                    downloadProgress = Double(downloaded) / Double(totalFiles)
+                    status = "⏭️ [\(index + 1)/\(totalFiles)] \(file.path) (cached)"
+                    continue
+                }
+                
                 try FileManager.default.createDirectory(at: destinationURL.deletingLastPathComponent(), withIntermediateDirectories: true)
                 
-                status = "⬇️ [\(index + 1)/\(files.count)] \(file.path)"
-                try await downloadFile(from: fileURL, to: destinationURL)
+                status = "⬇️ [\(index + 1)/\(totalFiles)] \(file.path)"
+                do {
+                    try await downloadFile(from: fileURL, to: destinationURL)
+                    downloaded += 1
+                } catch {
+                    status = "❌ Failed to download \(file.path): \(error.localizedDescription). Retrying in 2s..."
+                    try await Task.sleep(nanoseconds: 2_000_000_000)
+                    try await downloadFile(from: fileURL, to: destinationURL)
+                    downloaded += 1
+                    status = "✅ Retry succeeded: \(file.path)"
+                }
                 
-                downloadProgress = Double(index + 1) / Double(files.count)
+                downloadProgress = Double(downloaded) / Double(totalFiles)
             }
             
-            try FileManager.default.removeItem(at: tempDir)
             isDownloading = false
             downloadProgress = 1.0
-            status = "✅ MOSS-TTS-Nano model downloaded and ready!"
+            if skipped > 0 {
+                status = "✅ Model ready! (\(downloaded) files, \(skipped) were cached)"
+            } else {
+                status = "✅ MOSS-TTS-Nano model downloaded and ready!"
+            }
             
         } catch let error as DecodingError {
             isDownloading = false
@@ -105,20 +130,15 @@ class ModelManager: ObservableObject {
     }
     
     private func downloadFile(from url: URL, to destination: URL) async throws {
-        let (tempURL, response) = try await URLSession.shared.download(from: url)
+        let (tempURL, response) = try await session.download(from: url)
         guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            throw NSError(domain: "Download", code: -1, userInfo: [NSLocalizedDescriptionKey: "Invalid response for \(url.lastPathComponent)"])
+            throw NSError(domain: "Download", code: -1, userInfo: [NSLocalizedDescriptionKey: "HTTP error for \(url.lastPathComponent)"])
         }
         try FileManager.default.moveItem(at: tempURL, to: destination)
     }
 }
 
 struct HFApiItem: Decodable {
-    let path: String
-    let type: String  // "file" or "directory"
-}
-
-struct HFFile: Decodable {
     let path: String
     let type: String
 }
