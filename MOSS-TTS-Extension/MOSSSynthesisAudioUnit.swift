@@ -26,7 +26,7 @@ public class MOSSSynthesisAudioUnit: AVSpeechSynthesisProviderAudioUnit {
     }
     
     // 2. Synthesize Speech from SSML
-    public override func synthesizeSpeech(for request: AVSpeechSynthesisProviderRequest) {
+    public func synthesizeSpeech(for request: AVSpeechSynthesisProviderRequest) {
         let ssml = request.ssmlRepresentation
         let voiceIdentifier = request.voice.identifier
         
