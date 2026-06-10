@@ -1,8 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
-    @State private var modelStatus: String = "Checking model status..."
-    @State private var isDownloading: Bool = false
+    @StateObject private var modelManager = ModelManager.shared
 
     var body: some View {
         VStack(spacing: 20) {
@@ -14,15 +13,21 @@ struct ContentView: View {
                 .font(.largeTitle)
                 .bold()
 
-            Text(modelStatus)
+            Text(modelManager.status)
                 .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
                 .padding()
 
-            if isDownloading {
-                ProgressView("Downloading MOSS-TTS-Nano...")
-                    .padding()
+            if modelManager.isDownloading {
+                ProgressView(value: modelManager.downloadProgress) {
+                    Text("Downloading MOSS-TTS-Nano...")
+                }
+                .padding()
+
+                Text("\(Int(modelManager.downloadProgress * 100))%")
+                    .font(.caption)
+                    .foregroundColor(.gray)
             }
 
             Text("Once installed, go to Settings > Accessibility > Spoken Content > Voices to enable the MOSS-TTS English and Cantonese voices.")
