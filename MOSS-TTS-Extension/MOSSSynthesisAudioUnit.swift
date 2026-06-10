@@ -44,7 +44,7 @@ public class MOSSSynthesisAudioUnit: AVSpeechSynthesisProviderAudioUnit {
         
         print("Synthesizing: \(text) (Language: \(languageCode))")
         
-        modelQueue.async {
+        Task {
             do {
                 // Load model if not already loaded
                 if self.model == nil {
@@ -60,31 +60,34 @@ public class MOSSSynthesisAudioUnit: AVSpeechSynthesisProviderAudioUnit {
                     return
                 }
                 
-                // Generate audio using MLX-Audio
-                for try await result in model.generate(text: text, language: languageCode) {
-                    // Convert MLXArray to AVAudioPCMBuffer (24kHz, 1-channel, Float32)
-                    let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 24000, channels: 1, interleaved: false)!
-                    let frameCount = AVAudioFrameCount(result.audio.size)
-                    
-                    guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
-                        outputBlock(nil, true)
-                        return
-                    }
-                    buffer.frameLength = frameCount
-                    
-                    let data = result.audio.data()
-                    data.withUnsafeBytes { rawBuffer in
-                        guard let source = rawBuffer.baseAddress?.assumingMemoryBound(to: Float.self) else { return }
-                        guard let destination = buffer.floatChannelData?[0] else { return }
-                        destination.assign(from: source, count: Int(frameCount))
-                    }
-                    
-                    // Return each buffer chunk. 'false' means more chunks coming.
-                    outputBlock(buffer, false)
+                // Generate audio using MLX-Audio (non-streaming, returns single MLXArray)
+                let audio = try await model.generate(
+                    text: text,
+                    voice: nil,
+                    refAudio: nil,
+                    refText: nil,
+                    language: languageCode
+                )
+                
+                // Convert MLXArray to AVAudioPCMBuffer (24kHz, 1-channel, Float32)
+                let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: Double(model.sampleRate), channels: 1, interleaved: false)!
+                let frameCount = AVAudioFrameCount(audio.size)
+                
+                guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
+                    outputBlock(nil, true)
+                    return
+                }
+                buffer.frameLength = frameCount
+                
+                let data = audio.data()
+                data.withUnsafeBytes { rawBuffer in
+                    guard let source = rawBuffer.baseAddress?.assumingMemoryBound(to: Float.self) else { return }
+                    guard let destination = buffer.floatChannelData?[0] else { return }
+                    destination.assign(from: source, count: Int(frameCount))
                 }
                 
-                // Signal completion with nil buffer
-                outputBlock(nil, true)
+                // Return the buffer to the system. 'true' indicates this is the final chunk.
+                outputBlock(buffer, true)
                 
             } catch {
                 print("❌ Synthesis failed: \(error)")
