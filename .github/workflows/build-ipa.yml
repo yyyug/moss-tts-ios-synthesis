@@ -21,9 +21,18 @@ jobs:
       - name: Generate Xcode Project
         run: xcodegen generate
 
+      - name: Resolve Swift Package Dependencies
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project MOSSTTS.xcodeproj \
+            -scheme MOSS-TTS-Host \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
       - name: Build Unsigned Archive
         run: |
-          xcodebuild clean archive \
+          xcodebuild archive \
             -project MOSSTTS.xcodeproj \
             -scheme MOSS-TTS-Host \
             -archivePath build/MOSSTTS.xcarchive \
