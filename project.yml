@@ -11,7 +11,7 @@ packages:
     branch: main
   MLXAudio:
     url: https://github.com/Blaizzy/mlx-audio-swift
-    branch: main
+    version: 0.1.0
 
 targets:
   MOSS-TTS-Host:
