@@ -1,0 +1,42 @@
+name: Build Unsigned IPA
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode Project
+        run: xcodegen generate
+
+      - name: Build Unsigned Archive
+        run: |
+          xcodebuild clean archive \
+            -project MOSSTTS.xcodeproj \
+            -scheme MOSS-TTS-Host \
+            -archivePath build/MOSSTTS.xcarchive \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Package Unsigned IPA
+        run: |
+          mkdir -p Payload
+          cp -r build/MOSSTTS.xcarchive/Products/Applications/MOSS-TTS-Host.app Payload/
+          zip -r MOSSTTS-Unsigned.ipa Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: MOSSTTS-Unsigned
+          path: MOSSTTS-Unsigned.ipa
