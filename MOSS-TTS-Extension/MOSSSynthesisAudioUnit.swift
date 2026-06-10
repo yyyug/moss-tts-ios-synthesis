@@ -69,9 +69,10 @@ public class MOSSSynthesisAudioUnit: AVSpeechSynthesisProviderAudioUnit {
                     language: languageCode
                 )
                 
-                // Convert MLXArray to AVAudioPCMBuffer (24kHz, 1-channel, Float32)
+                // Convert MLXArray to AVAudioPCMBuffer (sampleRate from model, 1-channel, Float32)
+                let samples = audio.asArray(Float.self)
                 let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: Double(model.sampleRate), channels: 1, interleaved: false)!
-                let frameCount = AVAudioFrameCount(audio.size)
+                let frameCount = AVAudioFrameCount(samples.count)
                 
                 guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
                     outputBlock(nil, true)
@@ -79,11 +80,8 @@ public class MOSSSynthesisAudioUnit: AVSpeechSynthesisProviderAudioUnit {
                 }
                 buffer.frameLength = frameCount
                 
-                let data = audio.data()
-                data.withUnsafeBytes { rawBuffer in
-                    guard let source = rawBuffer.baseAddress?.assumingMemoryBound(to: Float.self) else { return }
-                    guard let destination = buffer.floatChannelData?[0] else { return }
-                    destination.assign(from: source, count: Int(frameCount))
+                if let destination = buffer.floatChannelData?[0] {
+                    destination.assign(from: samples, count: samples.count)
                 }
                 
                 // Return the buffer to the system. 'true' indicates this is the final chunk.
