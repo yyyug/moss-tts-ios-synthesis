@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import UIKit
 
 struct ContentView: View {
     @StateObject private var modelManager = ModelManager.shared
@@ -37,9 +38,27 @@ struct ContentView: View {
                     Text("\(Int(modelManager.downloadProgress * 100))%")
                         .font(.caption)
                         .foregroundColor(.gray)
+                } else if !extensionStatus.contains("✅") {
+                    Button {
+                        let url = URL(string: "App-Prefs:root=ACCESSIBILITY&path=Spoken%20Content/VOICES") ?? URL(string: UIApplication.openSettingsURLString)!
+                        UIApplication.shared.open(url)
+                    } label: {
+                        Label("Open Accessibility → Spoken Content → Voices", systemImage: "arrow.up.forward.app")
+                            .font(.body)
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.blue.opacity(0.1))
+                            .cornerRadius(10)
+                    }
+                    .buttonStyle(.plain)
+
+                    Text("Look for \"MOSS English\" and \"MOSS Cantonese\" in the voice list.")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                        .multilineTextAlignment(.center)
                 }
 
-                Text("Once installed, go to Settings > Accessibility > Spoken Content > Voices to enable the MOSS-TTS English and Cantonese voices.")
+                Text("Once the extension is registered, go to Settings > Accessibility > Spoken Content > Voices to enable the MOSS-TTS voices.")
                     .font(.caption)
                     .foregroundColor(.gray)
                     .padding()
