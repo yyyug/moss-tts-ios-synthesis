@@ -1,7 +1,7 @@
 import Foundation
 import AVFoundation
 import MLX
-import MLXAudio
+import MLXAudioTTS
 
 @objc(MOSSSynthesisAudioUnit)
 public class MOSSSynthesisAudioUnit: AVSpeechSynthesisProviderAudioUnit {
