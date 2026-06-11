@@ -8,7 +8,7 @@ options:
 packages:
   MLXAudio:
     url: https://github.com/Blaizzy/mlx-audio-swift
-    commit: 10b7366204fd3991458de690f3d49651251055f5
+    branch: main
 
 targets:
   MOSS-TTS-Host:
