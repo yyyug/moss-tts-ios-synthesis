@@ -18,27 +18,27 @@
     <string>1.0</string>
     <key>CFBundleVersion</key>
     <string>1</string>
+    <key>AudioComponents</key>
+    <array>
+        <dict>
+            <key>type</key>
+            <string>vspr</string>
+            <key>subtype</key>
+            <string>moss</string>
+            <key>manufacturer</key>
+            <string>OpnM</string>
+            <key>name</key>
+            <string>MOSS-TTS Engine</string>
+            <key>version</key>
+            <integer>1</integer>
+        </dict>
+    </array>
     <key>NSExtension</key>
     <dict>
         <key>NSExtensionPointIdentifier</key>
         <string>com.apple.audio.synthesis.provider</string>
         <key>NSExtensionPrincipalClass</key>
         <string>$(PRODUCT_MODULE_NAME).MOSSSynthesisAudioUnit</string>
-        <key>NSExtensionAttributes</key>
-        <dict>
-            <key>componentTypes</key>
-            <array>
-                <string>vspr</string>
-            </array>
-            <key>manufacturer</key>
-            <string>OpenMOSS</string>
-            <key>name</key>
-            <string>MOSS-TTS Engine</string>
-            <key>subtype</key>
-            <string>moss</string>
-            <key>version</key>
-            <integer>1</integer>
-        </dict>
     </dict>
 </dict>
 </plist>

@@ -5,11 +5,14 @@ import MLXAudioTTS
 
 @objc(MOSSSynthesisAudioUnit)
 public class MOSSSynthesisAudioUnit: AVSpeechSynthesisProviderAudioUnit {
-    
+
     private var model: (any SpeechGenerationModel)?
-    private let modelQueue = DispatchQueue(label: "com.openmoss.mosstts.modelQueue", qos: .userInitiated)
     private let appGroupName = "group.com.openmoss.mosstts"
-    
+
+    // Audio generation state
+    private var audioBuffer: AVAudioPCMBuffer?
+    private var framePosition: AVAudioFramePosition = 0
+
     // 1. Advertise Available Voices to iOS (English and Cantonese)
     public override var speechVoices: [AVSpeechSynthesisProviderVoice] {
         get {
@@ -30,23 +33,25 @@ public class MOSSSynthesisAudioUnit: AVSpeechSynthesisProviderAudioUnit {
         }
         set { }
     }
-    
-    // 2. Synthesize Speech from SSML
-    @objc public func synthesizeSpeech(for request: AVSpeechSynthesisProviderRequest, outputBlock: @escaping (AVAudioPCMBuffer?, Bool) -> Void) {
+
+    // 2. Called by the system to begin speech synthesis
+    public override func synthesizeSpeechRequest(_ request: AVSpeechSynthesisProviderRequest) {
         let ssml = request.ssmlRepresentation
         let voiceIdentifier = request.voice.identifier
-        
+
         let isCantonese = voiceIdentifier == "com.openmoss.mosstts.voice.yue"
         let languageCode = isCantonese ? "yue" : "en"
-        
+
         let text = ssml.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
                        .trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        print("Synthesizing: \(text) (Language: \(languageCode))")
-        
+
+        print("synthesizeSpeechRequest: \(text) (Language: \(languageCode))")
+
+        framePosition = 0
+        audioBuffer = nil
+
         Task {
             do {
-                // Load model if not already loaded
                 if self.model == nil {
                     guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: self.appGroupName) else {
                         throw NSError(domain: "MOSS-TTS", code: -1, userInfo: [NSLocalizedDescriptionKey: "App Group not configured"])
@@ -54,13 +59,9 @@ public class MOSSSynthesisAudioUnit: AVSpeechSynthesisProviderAudioUnit {
                     let modelPath = containerURL.appendingPathComponent("MOSS-TTS-Nano-100M").path
                     self.model = try await TTS.loadModel(modelRepo: modelPath)
                 }
-                
-                guard let model = self.model else {
-                    outputBlock(nil, true)
-                    return
-                }
-                
-                // Generate audio using MLX-Audio (non-streaming, returns single MLXArray)
+
+                guard let model = self.model else { return }
+
                 let audio = try await model.generate(
                     text: text,
                     voice: nil,
@@ -68,29 +69,65 @@ public class MOSSSynthesisAudioUnit: AVSpeechSynthesisProviderAudioUnit {
                     refText: nil,
                     language: languageCode
                 )
-                
-                // Convert MLXArray to AVAudioPCMBuffer (sampleRate from model, 1-channel, Float32)
+
                 let samples = audio.asArray(Float.self)
-                let format = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: Double(model.sampleRate), channels: 1, interleaved: false)!
+                let format = AVAudioFormat(
+                    commonFormat: .pcmFormatFloat32,
+                    sampleRate: Double(model.sampleRate),
+                    channels: 1,
+                    interleaved: false
+                )!
                 let frameCount = AVAudioFrameCount(samples.count)
-                
-                guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else {
-                    outputBlock(nil, true)
-                    return
-                }
+
+                guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else { return }
                 buffer.frameLength = frameCount
-                
+
                 if let destination = buffer.floatChannelData?[0] {
                     destination.assign(from: samples, count: samples.count)
                 }
-                
-                // Return the buffer to the system. 'true' indicates this is the final chunk.
-                outputBlock(buffer, true)
-                
+
+                self.audioBuffer = buffer
+                self.framePosition = 0
+
             } catch {
                 print("❌ Synthesis failed: \(error)")
-                outputBlock(nil, true)
             }
+        }
+    }
+
+    // 3. Called by the system to cancel
+    public override func cancelSpeechRequest() {
+        audioBuffer = nil
+        framePosition = 0
+    }
+
+    // 4. Provide audio data to the system render pipeline
+    public override var internalRenderBlock: AUInternalRenderBlock {
+        return { [weak self] _, _, _, busNumber, frameCount, audioBufferList in
+            guard let self = self else {
+                return noErr
+            }
+
+            let unsafeBuffer = UnsafeMutableAudioBufferListPointer(audioBufferList)
+            guard busNumber < unsafeBuffer.count else { return noErr }
+
+            let audioBufferPtr = unsafeBuffer[busBufferAccess: busNumber]
+
+            guard let src = self.audioBuffer?.floatChannelData?[0],
+                  let dst = audioBufferPtr.mData?.assumingMemoryBound(to: Float.self) else {
+                return noErr
+            }
+
+            let totalFrames = Int(self.audioBuffer?.frameLength ?? 0)
+            let currentFrame = Int(self.framePosition)
+            let framesToCopy = min(Int(frameCount), max(0, totalFrames - currentFrame))
+
+            if framesToCopy > 0 {
+                memcpy(dst, src + currentFrame, framesToCopy * MemoryLayout<Float>.size)
+                self.framePosition += AVAudioFramePosition(framesToCopy)
+            }
+
+            return noErr
         }
     }
 }
