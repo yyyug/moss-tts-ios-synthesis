@@ -103,18 +103,24 @@ public class MOSSSynthesisAudioUnit: AVSpeechSynthesisProviderAudioUnit {
 
     // 4. Provide audio data to the system render pipeline
     public override var internalRenderBlock: AUInternalRenderBlock {
-        return { [weak self] _, _, _, busNumber, frameCount, audioBufferList in
+        return { [weak self] actionFlags, timestamp, frameCount, busNumber, audioBufferList, events, pullInputBlock in
             guard let self = self else {
                 return noErr
             }
 
+            _ = actionFlags
+            _ = timestamp
+            _ = events
+            _ = pullInputBlock
+
             let unsafeBuffer = UnsafeMutableAudioBufferListPointer(audioBufferList)
             guard busNumber < unsafeBuffer.count else { return noErr }
 
-            let audioBufferPtr = unsafeBuffer[busBufferAccess: busNumber]
+            guard let dst = unsafeBuffer[busNumber].mData?.assumingMemoryBound(to: Float.self) else {
+                return noErr
+            }
 
-            guard let src = self.audioBuffer?.floatChannelData?[0],
-                  let dst = audioBufferPtr.mData?.assumingMemoryBound(to: Float.self) else {
+            guard let src = self.audioBuffer?.floatChannelData?[0] else {
                 return noErr
             }
 
