@@ -38,7 +38,16 @@
         <key>NSExtensionPointIdentifier</key>
         <string>com.apple.audio.synthesis.provider</string>
         <key>NSExtensionPrincipalClass</key>
-        <string>$(PRODUCT_MODULE_NAME).MOSSSynthesisAudioUnit</string>
+        <string>MOSSSynthesisAudioUnit</string>
+        <key>NSExtensionAttributes</key>
+        <dict>
+            <key>AudioComponentBundle</key>
+            <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+            <key>componentTypes</key>
+            <array>
+                <string>vspr</string>
+            </array>
+        </dict>
     </dict>
 </dict>
 </plist>

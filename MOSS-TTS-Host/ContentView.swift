@@ -32,10 +32,11 @@ struct ContentView: View {
                         .foregroundColor(.gray)
                 } else if modelManager.status.contains("ready") || modelManager.status.contains("ready!") {
                     Button {
-                        let url = URL(string: "App-Prefs:root=ACCESSIBILITY&path=Spoken%20Content/VOICES") ?? URL(string: UIApplication.openSettingsURLString)!
-                        UIApplication.shared.open(url)
+                        if let url = URL(string: UIApplication.openSettingsURLString) {
+                            UIApplication.shared.open(url)
+                        }
                     } label: {
-                        Label("Open Accessibility → Spoken Content → Voices", systemImage: "arrow.up.forward.app")
+                        Label("Open Settings → Accessibility → Spoken Content → Voices", systemImage: "gear")
                             .font(.body)
                             .padding()
                             .frame(maxWidth: .infinity)
@@ -43,11 +44,6 @@ struct ContentView: View {
                             .cornerRadius(10)
                     }
                     .buttonStyle(.plain)
-
-                    Text("Look for \"MOSS English\" and \"MOSS Cantonese\" in the voice list.")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                        .multilineTextAlignment(.center)
                 }
 
                 Spacer()
