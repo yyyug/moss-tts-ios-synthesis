@@ -1,10 +1,8 @@
 import SwiftUI
-import AVFoundation
 import UIKit
 
 struct ContentView: View {
     @StateObject private var modelManager = ModelManager.shared
-    @State private var extensionStatus: String = "Checking extension registration..."
 
     var body: some View {
         ScrollView {
@@ -16,12 +14,6 @@ struct ContentView: View {
                 Text("MOSS-TTS iOS Engine")
                     .font(.largeTitle)
                     .bold()
-
-                Text(extensionStatus)
-                    .font(.body)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding()
 
                 Text(modelManager.status)
                     .font(.body)
@@ -38,7 +30,7 @@ struct ContentView: View {
                     Text("\(Int(modelManager.downloadProgress * 100))%")
                         .font(.caption)
                         .foregroundColor(.gray)
-                } else if !extensionStatus.contains("✅") {
+                } else if modelManager.status.contains("ready") || modelManager.status.contains("ready!") {
                     Button {
                         let url = URL(string: "App-Prefs:root=ACCESSIBILITY&path=Spoken%20Content/VOICES") ?? URL(string: UIApplication.openSettingsURLString)!
                         UIApplication.shared.open(url)
@@ -58,41 +50,13 @@ struct ContentView: View {
                         .multilineTextAlignment(.center)
                 }
 
-                Text("Once the extension is registered, go to Settings > Accessibility > Spoken Content > Voices to enable the MOSS-TTS voices.")
-                    .font(.caption)
-                    .foregroundColor(.gray)
-                    .padding()
-                    .multilineTextAlignment(.center)
+                Spacer()
             }
             .padding()
         }
         .task {
-            await checkExtensionRegistration()
             await modelManager.ensureModelIsDownloaded()
         }
-    }
-
-    private func checkExtensionRegistration() async {
-        let expectedIDs = Set([
-            "com.openmoss.mosstts.voice.en",
-            "com.openmoss.mosstts.voice.yue"
-        ])
-
-        for _ in 0..<10 {
-            let voices = AVSpeechSynthesisVoice.speechVoices()
-            let foundIDs = Set(voices.map { $0.identifier })
-            let missing = expectedIDs.subtracting(foundIDs)
-
-            if missing.isEmpty {
-                extensionStatus = "✅ Extension registered — \(voices.count) voices available"
-                return
-            }
-
-            extensionStatus = "⏳ Waiting for extension registration... (\(foundIDs.count) voices found, \(missing.count) missing)"
-            try? await Task.sleep(nanoseconds: 1_000_000_000)
-        }
-
-        extensionStatus = "⚠️ Extension not yet detected. Try rebooting the device or opening Settings > Accessibility > Spoken Content > Voices."
     }
 }
 

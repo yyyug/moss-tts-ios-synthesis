@@ -21,7 +21,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.openmoss.mosstts.host
         INFOPLIST_FILE: MOSS-TTS-Host/Info.plist
-        CODE_SIGN_ENTITLEMENTS: MOSS-TTS-Host/MOSS-TTS-Host.entitlements
+    entitlements:
+      path: MOSS-TTS-Host/MOSS-TTS-Host.entitlements
 
   MOSS-TTS-Extension:
     type: app-extension
@@ -34,4 +35,5 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.openmoss.mosstts.host.extension
         INFOPLIST_FILE: MOSS-TTS-Extension/Info.plist
-        CODE_SIGN_ENTITLEMENTS: MOSS-TTS-Extension/MOSS-TTS-Extension.entitlements
+    entitlements:
+      path: MOSS-TTS-Extension/MOSS-TTS-Extension.entitlements
