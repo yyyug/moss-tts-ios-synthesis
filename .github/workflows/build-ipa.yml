@@ -15,23 +15,32 @@ jobs:
       - name: Select Xcode 26.3 for Swift 6.2
         run: sudo xcode-select --switch /Applications/Xcode_26.3.app
 
-      - name: Cache Homebrew (XcodeGen)
+      - name: Cache Homebrew
         uses: actions/cache@v4
         with:
-          path: /opt/homebrew/bin/xcodegen
-          key: brew-xcodegen-2.45.4
+          path: /opt/homebrew
+          key: brew-${{ runner.os }}-2025-06
+          restore-keys: brew-${{ runner.os }}-
 
       - name: Install XcodeGen
         if: steps.cache-homebrew.outputs.cache-hit != 'true'
         run: brew install xcodegen
 
-      - name: Cache Swift Package Dependencies
-        id: cache-spm
+      - name: Cache Swift Package Source
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/org.swift.swiftpm
+          key: spm-source-${{ hashFiles('project.yml') }}
+          restore-keys: spm-source-
+
+      - name: Cache Xcode DerivedData
         uses: actions/cache@v4
         with:
           path: ~/Library/Developer/Xcode/DerivedData
-          key: swift-spm-${{ hashFiles('project.yml') }}
-          restore-keys: swift-spm-
+          key: derived-${{ hashFiles('project.yml') }}-${{ github.sha }}
+          restore-keys: |
+            derived-${{ hashFiles('project.yml') }}-
+            derived-
 
       - name: Generate Xcode Project
         run: xcodegen generate
@@ -42,6 +51,7 @@ jobs:
             -project MOSSTTS.xcodeproj \
             -scheme MOSS-TTS-Host \
             -derivedDataPath ~/Library/Developer/Xcode/DerivedData \
+            -skipPackagePluginValidation \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
@@ -54,6 +64,7 @@ jobs:
             -archivePath build/MOSSTTS.xcarchive \
             -destination 'generic/platform=iOS' \
             -derivedDataPath ~/Library/Developer/Xcode/DerivedData \
+            -skipPackagePluginValidation \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
