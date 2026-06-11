@@ -143,6 +143,26 @@ class ModelManager: ObservableObject {
         }
         try FileManager.default.moveItem(at: tempURL, to: destination)
     }
+    
+    func deleteModel() async {
+        guard let containerURL = modelContainerURL else {
+            status = "❌ No storage available."
+            return
+        }
+        
+        let modelDirectory = containerURL.appendingPathComponent(modelName)
+        
+        if FileManager.default.fileExists(atPath: modelDirectory.path) {
+            do {
+                try FileManager.default.removeItem(at: modelDirectory)
+                status = "🗑️ Model deleted successfully."
+            } catch {
+                status = "❌ Failed to delete model: \(error.localizedDescription)"
+            }
+        } else {
+            status = "⚠️ Model not found."
+        }
+    }
 }
 
 struct HFApiItem: Decodable {

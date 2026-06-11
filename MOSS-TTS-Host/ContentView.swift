@@ -3,6 +3,7 @@ import UIKit
 
 struct ContentView: View {
     @StateObject private var modelManager = ModelManager.shared
+    @State private var showVoiceList = false
 
     var body: some View {
         ScrollView {
@@ -30,17 +31,32 @@ struct ContentView: View {
                     Text("\(Int(modelManager.downloadProgress * 100))%")
                         .font(.caption)
                         .foregroundColor(.gray)
-                } else if modelManager.status.contains("ready") || modelManager.status.contains("ready!") {
+                }
+
+                // Voices button - always visible
+                Button {
+                    showVoiceList = true
+                } label: {
+                    Label("Voices", systemImage: "waveform.circle")
+                        .font(.body)
+                        .padding()
+                        .frame(maxWidth: .infinity)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
+
+                if modelManager.status.contains("ready") || modelManager.status.contains("ready!") {
                     Button {
                         if let url = URL(string: UIApplication.openSettingsURLString) {
                             UIApplication.shared.open(url)
                         }
                     } label: {
-                        Label("Open Settings → Accessibility → Spoken Content → Voices", systemImage: "gear")
+                        Label("Open iOS Voice Settings", systemImage: "gear")
                             .font(.body)
                             .padding()
                             .frame(maxWidth: .infinity)
-                            .background(Color.blue.opacity(0.1))
+                            .background(Color.green.opacity(0.1))
                             .cornerRadius(10)
                     }
                     .buttonStyle(.plain)
@@ -52,6 +68,9 @@ struct ContentView: View {
         }
         .task {
             await modelManager.ensureModelIsDownloaded()
+        }
+        .sheet(isPresented: $showVoiceList) {
+            VoiceListView()
         }
     }
 }

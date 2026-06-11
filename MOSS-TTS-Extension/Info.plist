@@ -4,6 +4,8 @@
 <dict>
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
+    <key>CFBundleDisplayName</key>
+    <string>MOSS-TTS Speech Provider</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -18,27 +20,8 @@
     <string>1.0</string>
     <key>CFBundleVersion</key>
     <string>1</string>
-    <key>AudioComponents</key>
-    <array>
-        <dict>
-            <key>type</key>
-            <string>vspr</string>
-            <key>subtype</key>
-            <string>moss</string>
-            <key>manufacturer</key>
-            <string>OpnM</string>
-            <key>name</key>
-            <string>MOSS-TTS Engine</string>
-            <key>version</key>
-            <integer>1</integer>
-        </dict>
-    </array>
     <key>NSExtension</key>
     <dict>
-        <key>NSExtensionPointIdentifier</key>
-        <string>com.apple.audio.synthesis.provider</string>
-        <key>NSExtensionPrincipalClass</key>
-        <string>MOSSSynthesisAudioUnit</string>
         <key>NSExtensionAttributes</key>
         <dict>
             <key>AudioComponentBundle</key>
@@ -48,6 +31,10 @@
                 <string>vspr</string>
             </array>
         </dict>
+        <key>NSExtensionPointIdentifier</key>
+        <string>com.apple.audio.synthesis.provider</string>
+        <key>NSExtensionPrincipalClass</key>
+        <string>$(PRODUCT_MODULE_NAME).MOSSSynthesisAudioUnit</string>
     </dict>
 </dict>
 </plist>
