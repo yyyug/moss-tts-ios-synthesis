@@ -26,8 +26,8 @@ public class MOSSSynthesisAudioUnit: AVSpeechSynthesisProviderAudioUnit {
                 AVSpeechSynthesisProviderVoice(
                     name: "MOSS Cantonese",
                     identifier: "com.openmoss.mosstts.voice.yue",
-                    primaryLanguages: ["yue-CN"],
-                    supportedLanguages: ["yue-CN", "zh-HK"]
+                    primaryLanguages: ["yue-Hant-HK"],
+                    supportedLanguages: ["yue-Hant-HK", "zh-Hant-HK"]
                 )
             ]
         }
