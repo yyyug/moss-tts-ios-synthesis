@@ -66,8 +66,18 @@ struct ContentView: View {
                 // Debug diagnostics
                 if !debugLines.isEmpty {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Diagnostics")
-                            .font(.headline)
+                        HStack {
+                            Text("Diagnostics")
+                                .font(.headline)
+                            Spacer()
+                            Button {
+                                let text = debugLines.joined(separator: "\n")
+                                UIPasteboard.general.string = text
+                            } label: {
+                                Label("Copy", systemImage: "doc.on.doc")
+                                    .font(.caption)
+                            }
+                        }
                         ForEach(debugLines, id: \.self) { line in
                             Text(line)
                                 .font(.caption)

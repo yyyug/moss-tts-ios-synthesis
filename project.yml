@@ -17,6 +17,7 @@ targets:
     sources: [MOSS-TTS-Host]
     dependencies:
       - target: MOSS-TTS-Extension
+        embed: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.openmoss.mosstts.host
