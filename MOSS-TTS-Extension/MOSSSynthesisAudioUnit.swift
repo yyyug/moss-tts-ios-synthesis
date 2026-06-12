@@ -8,6 +8,8 @@ public class MOSSSynthesisAudioUnit: AVSpeechSynthesisProviderAudioUnit {
 
     private var model: (any SpeechGenerationModel)?
     private let appGroupName = "group.com.openmoss.mosstts"
+    private let modelName = "MOSS-TTS-Nano-100M"
+    private let modelRepo = "mlx-community/MOSS-TTS-Nano-100M"
 
     // Audio generation state
     private var audioBuffer: AVAudioPCMBuffer?
@@ -34,6 +36,50 @@ public class MOSSSynthesisAudioUnit: AVSpeechSynthesisProviderAudioUnit {
         set { }
     }
 
+    private func resolveModelPath() async throws -> String {
+        // 1. Try App Group container (shared with host app)
+        if let appGroupURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName) {
+            let modelDir = appGroupURL.appendingPathComponent(modelName)
+            if FileManager.default.fileExists(atPath: modelDir.path) {
+                print("Using model from App Group container")
+                return modelDir.path
+            }
+        }
+
+        // 2. Try extension's own container
+        let extContainer = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
+        let modelDir = extContainer.appendingPathComponent(modelName)
+        if FileManager.default.fileExists(atPath: modelDir.path) {
+            print("Using model from extension container")
+            return modelDir.path
+        }
+
+        // 3. Download model into extension's container
+        print("Model not found, downloading to extension container...")
+        try await downloadModel(to: modelDir)
+        return modelDir.path
+    }
+
+    private func downloadModel(to directory: URL) async throws {
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+
+        let apiURL = URL(string: "https://huggingface.co/api/models/\(modelRepo)/tree/main")!
+        let session = URLSession.shared
+        let (data, _) = try await session.data(from: apiURL)
+        let files = try JSONDecoder().decode([HFApiItem].self, from: data).filter { $0.type == "file" }
+
+        for file in files {
+            let fileURL = URL(string: "https://huggingface.co/\(modelRepo)/resolve/main/\(file.path)")!
+            let dest = directory.appendingPathComponent(file.path)
+            guard !FileManager.default.fileExists(atPath: dest.path) else { continue }
+            try FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
+            let (temp, response) = try await session.download(from: fileURL)
+            guard let http = response as? HTTPURLResponse, http.statusCode == 200 else { continue }
+            try FileManager.default.moveItem(at: temp, to: dest)
+        }
+    }
+
     // 2. Called by the system to begin speech synthesis
     public override func synthesizeSpeechRequest(_ request: AVSpeechSynthesisProviderRequest) {
         let ssml = request.ssmlRepresentation
@@ -53,10 +99,7 @@ public class MOSSSynthesisAudioUnit: AVSpeechSynthesisProviderAudioUnit {
         Task {
             do {
                 if self.model == nil {
-                    guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: self.appGroupName) else {
-                        throw NSError(domain: "MOSS-TTS", code: -1, userInfo: [NSLocalizedDescriptionKey: "App Group not configured"])
-                    }
-                    let modelPath = containerURL.appendingPathComponent("MOSS-TTS-Nano-100M").path
+                    let modelPath = try await self.resolveModelPath()
                     self.model = try await TTS.loadModel(modelRepo: modelPath)
                 }
 
@@ -136,4 +179,9 @@ public class MOSSSynthesisAudioUnit: AVSpeechSynthesisProviderAudioUnit {
             return noErr
         }
     }
+}
+
+private struct HFApiItem: Decodable {
+    let path: String
+    let type: String
 }

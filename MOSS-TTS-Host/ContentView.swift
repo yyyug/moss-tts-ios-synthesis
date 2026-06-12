@@ -155,17 +155,30 @@ struct ContentView: View {
         }
 
         // Model directory
+        var modelFound = false
         if let container = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupID) {
             let modelDir = container.appendingPathComponent("MOSS-TTS-Nano-100M")
             if FileManager.default.fileExists(atPath: modelDir.path) {
                 if let files = try? FileManager.default.contentsOfDirectory(atPath: modelDir.path) {
-                    lines.append("Model dir: \(files.count) files")
+                    lines.append("Model dir (App Group): \(files.count) files")
                 } else {
-                    lines.append("Model dir: exists (unreadable)")
+                    lines.append("Model dir (App Group): exists")
                 }
-            } else {
-                lines.append("Model dir: NOT FOUND")
+                modelFound = true
             }
+        }
+        if !modelFound {
+            let localDocs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+            let modelDir = localDocs?.appendingPathComponent("MOSS-TTS-Nano-100M")
+            if let dir = modelDir, FileManager.default.fileExists(atPath: dir.path) {
+                if let files = try? FileManager.default.contentsOfDirectory(atPath: dir.path) {
+                    lines.append("Model dir (local): \(files.count) files")
+                }
+                modelFound = true
+            }
+        }
+        if !modelFound {
+            lines.append("Model dir: NOT FOUND (extension will self-download)")
         }
 
         return lines
